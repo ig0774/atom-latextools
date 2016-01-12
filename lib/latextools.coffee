@@ -83,7 +83,7 @@ module.exports = Latextools =
       properties:
         texpath:
           type: 'string'
-          default: "/Library/TeX/texbin:/usr/texbin:/usr/local/bin:/opt/local/bin"
+          default: "/Library/TeX/texbin:/usr/texbin:/usr/local/bin:/opt/local/bin:$PATH"
       order: 13
 
     win32:
@@ -106,6 +106,7 @@ module.exports = Latextools =
           type: 'number'
           default: 0.5
       order:14
+
     linux:
       type: 'object'
       properties:
