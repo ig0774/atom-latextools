@@ -4,6 +4,7 @@ path = require 'path'
 fs = require 'fs'
 {parse_tex_log} = require './parsers/parse-tex-log'
 parse_tex_directives = require './parsers/tex-directive-parser'
+{expand_variables} = require './utils/expand-vars'
 
 module.exports =
 
@@ -108,19 +109,14 @@ class Builder extends LTool
 
     # Now prepare path
     # TODO: also env if needed
-    # Note: texpath must NOT include $PATH!!!
 
-    # Apparently the key is different on Win and non-Win
-    if process.platform == "win32"
-      current_path = process.env.Path
-    else
-      current_path = process.env.PATH
     texpath = atom.config.get("latextools." + process.platform + ".texpath")
     @ltConsole.addContent("Platform: #{process.platform}; texpath: #{texpath}")
-    cmd_env = process.env
+    # shallow-copy
+    cmd_env = Object.create process.env
     if texpath
-      cmd_env.PATH = current_path + path.delimiter + texpath
-      @ltConsole.addContent("setting PATH = #{process.env.PATH}")
+      cmd_env.PATH = expand_variables(texpath)
+      @ltConsole.addContent("setting PATH = #{cmd_env.PATH}")
 
     @ltConsole.addContent("Processing file #{filebase} (#{filename}) in directory #{filedir}",br=true)
 
