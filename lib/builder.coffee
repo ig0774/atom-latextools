@@ -71,6 +71,8 @@ class Builder extends LTool
     if te == ''
       @ltConsole.addContent("Focus the text editor before invoking a build")
       return
+  build: (te) ->
+    return unless te?
 
     # save on build
 
@@ -185,4 +187,4 @@ class Builder extends LTool
 
         # Jump to PDF
         @ltConsole.addContent("Jumping to PDF...", br=true)
-        @viewer.jumpToPdf()
+        @viewer.jumpToPdf(te)
