@@ -39,7 +39,7 @@ createLogRule = (sheet, font, fontSize) ->
 
   # style for actual message
   sheet.insertRule(
-    ".latextools-console-message { font-family: #{font}; font-size: #{fontSize};",
+    ".latextools-console-message { font-family: #{font}; font-size: #{fontSize}; }",
     index
   )
 
@@ -53,6 +53,8 @@ class LTConsole
       closeMethod: 'hide'
       autoScroll: true
       className: 'latextools-console'
+
+    @messages.setSummary summary: ''
 
   # Public API:
   show: ->
@@ -81,6 +83,9 @@ class LTConsole
         atom.workspace.open file, initialLine: line - 1
 
     @messages.add message
+
+    # scroll to the bottom
+    @messages.updateScroll()
 
   clear: ->
     @messages.clear()
