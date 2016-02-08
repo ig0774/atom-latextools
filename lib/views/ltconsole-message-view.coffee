@@ -1,4 +1,6 @@
 {Disposable} = require 'atom'
+path = require 'path'
+
 
 module.exports =
 class LTConsoleMessageView extends Disposable
@@ -20,6 +22,7 @@ class LTConsoleMessageView extends Disposable
 
   gotoMessage: (e) =>
     e?.stopPropagation()
+    console.log("gotoMessage")
     console.log @file, @line - 1
     atom.workspace.open @file, initialLine: @line - 1
 
