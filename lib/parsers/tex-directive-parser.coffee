@@ -53,7 +53,7 @@ module.exports = parse_tex_directives =
         false
 
     breakOnFirst = hasOnlyFor and onlyFor.length is 1 and (
-      not multiValues? or not onlyFor[0] in multiValues
+      not multiValues? or onlyFor[0] not in multiValues
     )
 
     for line in lines
@@ -64,7 +64,7 @@ module.exports = parse_tex_directives =
         if key of keyMaps
           key = keyMaps[key]
 
-        if hasOnlyFor and key not of onlyFor
+        if hasOnlyFor and key not in onlyFor
           continue
 
         if key in multiValues
