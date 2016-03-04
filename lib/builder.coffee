@@ -165,8 +165,10 @@ class Builder extends LTool
           log = fs.readFileSync(fulllogfile, 'utf8')
         catch error
           @ltConsole.addContent("Could not read log file!")
-          console.log("Could not read log file #{fulllogfile}")
-          console.log(error)
+          atom.notifications.addError(
+            "Could not read log file #{fulllogfile}",
+            detail: error
+          )
           return
 
 
