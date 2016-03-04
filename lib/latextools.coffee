@@ -38,6 +38,11 @@ module.exports = Latextools =
       type: 'boolean'
       default: true
       order: 6
+    viewer:
+      type: 'string'
+      default: 'default'
+      enum: ['default', 'pdf-view']
+      order: 6.5
 
     # commandCompletion:
     #   type: 'string'
@@ -157,11 +162,6 @@ module.exports = Latextools =
         #     type: 'string'
       order: 18
 
-    viewer:
-      type: 'string'
-      default: 'default'
-      enum: ['default', 'pdf-view']
-      order: 18.5
 
 # Still need image opening defaults
 # Also, rethink below
@@ -265,7 +265,6 @@ module.exports = Latextools =
     @subscriptions.add atom.commands.add 'atom-text-editor', 'latextools:double-quote': =>
       @requireIfNeeded ['snippet-manager']
       @snippetManager.quotes('``', '\'\'', '"')
-
 
 
     # Autotriggered functionality

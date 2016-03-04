@@ -73,4 +73,4 @@ class Viewer extends LTool
         viewer.forwardSync pdf_file, current_file, row, col,
           keepFocus: keep_focus
       else
-        viewer.viewFile pdf, keepFocus: keep_focus
+        viewer.viewFile pdf_file, keepFocus: keep_focus
