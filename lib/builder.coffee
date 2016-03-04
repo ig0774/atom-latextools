@@ -74,7 +74,9 @@ class Builder extends LTool
       atom.workspace.paneForItem(te)?.saveItem(te)
 
     unless te.getPath()?
-      alert 'Please save your file before attempting to build'
+      atom.notifications.addError(
+        'Please save your file before attempting to build'
+      )
       return
 
     if te.isModified()
@@ -201,6 +203,15 @@ class Builder extends LTool
                 file: if path.isAbsolute(warn[0]) then warn[0] else path.join(filedir,warn[0])
                 line: warn[1]
                 level: 'warning'
+
+        unless errors.length > 0
+          atom.notifications.addSuccess(
+            "Build completed with 0 errors and #{warnings.length} warnings"
+          )
+        else
+          atom.notifications.addError(
+            "Build completed with #{errors.length} errors and #{warnings.length} warnings"
+          )
 
         # Jump to PDF
         @ltConsole.addContent("Jumping to PDF...")

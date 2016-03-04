@@ -89,7 +89,9 @@ class Viewer extends LTool
       when "win32" then @_jumpWindows(texfile, pdffile, row, col, forward_sync, keep_focus)
       when "linux" then @_jumpLinux(texfile, pdffile, row, col, forward_sync, keep_focus)
       else
-        alert("Sorry, no viewer for the current platform")
+        atom.notifications.addWarning(
+          "Sorry, no viewer available for the current platform",
+        )
 
   jumpToPdf: ->
     te = atom.workspace.getActiveTextEditor()
