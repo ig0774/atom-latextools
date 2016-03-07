@@ -18,6 +18,13 @@
   "dependencies": {
     "atom-space-pen-views": "^2.1.0"
   },
+  "providedServices": {
+    "autocomplete.provider": {
+      "versions": {
+        "2.0.0": "getProvider"
+      }
+    }
+  },
   "consumedServices": {
     "snippets": {
       "versions": {

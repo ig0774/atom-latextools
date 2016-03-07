@@ -44,11 +44,24 @@ module.exports = Latextools =
       enum: ['default', 'pdf-view']
       order: 6.5
 
-    # commandCompletion:
-    #   type: 'string'
-    #   default: 'prefixed'
-    #   enum: ['always', 'prefixed', 'never']
-    #   order: 7
+    commandCompletion:
+      type: 'string'
+      default: 'prefixed'
+      enum: ['always', 'prefixed', 'never']
+      order: 7
+
+    cwlList:
+      type: 'array'
+      default: [
+        "tex",
+        "latex-209",
+        "latex-document",
+        "latex-l2tabu",
+        "latex-mathsymbols"
+      ]
+      items:
+        type: 'string'
+      order: 8
 
     # hideBuildPanel:
     #   type: 'string'
@@ -183,6 +196,7 @@ module.exports = Latextools =
     @completionManager = null
     @snippetManager = null
     @viewerRegistry = null
+    @cwlProvider = null
 
     # function to register a viewer with latextools
     @addViewer = (names, cls) =>
@@ -283,6 +297,14 @@ module.exports = Latextools =
 
         # add more here?
 
+    # if using cwl-completion, load autocomplete provider
+    if atom.config.get("latextools.commandCompletion") != 'never'
+      @requireIfNeeded ['cwl-provider']
+      @cwlProvider.loadCompletions()
+
+  getProvider: ->
+    @cwlProvider
+
   deactivate: ->
     @subscriptions.dispose()
     @ltConsole.destroy()
@@ -337,3 +359,5 @@ module.exports = Latextools =
         when "snippet-manager"
           SnippetManager ?= require './snippet-manager'
           @snippetManager ?= new SnippetManager(@ltConsole)
+        when "cwl-provider"
+          @cwlProvider ?= require './ltcwl-completion'
