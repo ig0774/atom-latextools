@@ -46,6 +46,9 @@ module.exports =
 
     return suggestions
 
+  # trigger auto indent after insert completions
+  onDidInsertSuggestion: ({editor}) ->
+    atom.commands.dispatch(atom.views.getView(editor), "editor:auto-indent")
 
   # validate and paring prefix
   _getValidPrefix: (editor, bufferPosition) ->
