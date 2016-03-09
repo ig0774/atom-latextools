@@ -359,5 +359,6 @@ module.exports = Latextools =
           SnippetManager ?= require './snippet-manager'
           @snippetManager ?= new SnippetManager(@ltConsole)
         when "cwl-provider"
-          @cwlProvider ?= require './ltcwl-completion'
-          @cwlProvider.loadCompletions()
+          unless @cwlProvider?
+            @cwlProvider = require './ltcwl-completion'
+            @cwlProvider.loadCompletions()
