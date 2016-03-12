@@ -19,10 +19,7 @@ class CompletionManager extends LTool
     @sel2_view = new LTSelectList2View
 
 
-  refCiteComplete:  ->
-
-    te = atom.workspace.getActiveTextEditor()
-
+  refCiteComplete: (te, keybinding = false) ->
     max_length = 100 # max length of ref/cite command, including backslash
     #ref_rx = /\\(?:eq|page|v|V|auto|name|c|C|cpage)?ref\{/
     ref_rx_rev = /^\{fer(?:qe|egap|v|V|otua|eman|c|C|egapc)?/
@@ -41,10 +38,12 @@ class CompletionManager extends LTool
 
     # TODO: pass initial match to select list
 
-    if m = ref_rx_rev.exec(line)
+    if (keybinding or atom.config.get("latextools.refAutoTrigger")) and
+    m = ref_rx_rev.exec(line)
       console.log("found match")
       @refComplete(te)
-    else if m = cite_rx_rev.exec(line)
+    else if (keybinding or atom.config.get("latextools.citeAutoTrigger")) and
+    m = cite_rx_rev.exec(line)
       console.log("found match")
       console.log(m)
       @citeComplete(te)
@@ -112,10 +111,19 @@ class CompletionManager extends LTool
       bibs = bibs.concat(b.split(','))
 
     # Trim and take care of .bib extension
-    bibs = ( if path.extname(b)=='.bib' then path.join(filedir, b.trim()) else path.join(filedir, b.trim() + '.bib') for b in bibs )
+    bibs = for b in bibs
+      b = path.resolve(filedir, b) unless path.isAbsolute(b)
+      b = b.trim() + '.bib' unless path.extname(b) is '.bib'
+      # Check to see if the file exists
+      continue unless is_file(b)
+      b
 
-    # Check to see if they exist
-    bibs = ( b for b in bibs when is_file(b) )
+    if bibs.length == 0
+      atom.notifications.addWarning(
+        "Could not find any bib files. " +
+        "Please check your \\bibliography statements"
+      )
+      return
 
     # If it's a single string, put it in an array
     if typeof bibs == 'string'
@@ -128,25 +136,28 @@ class CompletionManager extends LTool
       item_fmt = atom.config.get("latextools.citePanelFormat")
 
       if item_fmt.length != 2
-        alert "Incorrect citePanelFormat specification. Check your preferences!"
+        atom.notifications.addError(
+          "Incorrect citePanelFormat specification. Check your preferences!",
+          detail: "Expected 2 entries but got #{item_fmt.length}"
+        )
         return
 
       # Inelegant but safe
       for i in [0...keywords.length]
         primary = item_fmt[0].replace("{keyword}", keywords[i])
-        primary = primary.replace("{title}", titles[i])
-        primary = primary.replace("{author}", authors[i])
-        primary = primary.replace("{year}", years[i])
-        primary = primary.replace("{author_short}", authors_short[i])
-        primary = primary.replace("{title_short}", titles_short[i])
-        primary = primary.replace("{journal}", journals[i])
+          .replace("{title}", titles[i])
+          .replace("{author}", authors[i])
+          .replace("{year}", years[i])
+          .replace("{author_short}", authors_short[i])
+          .replace("{title_short}", titles_short[i])
+          .replace("{journal}", journals[i])
         secondary = item_fmt[1].replace("{keyword}", keywords[i])
-        secondary = secondary.replace("{title}", titles[i])
-        secondary = secondary.replace("{author}", authors[i])
-        secondary = secondary.replace("{year}", years[i])
-        secondary = secondary.replace("{author_short}", authors_short[i])
-        secondary = secondary.replace("{title_short}", titles_short[i])
-        secondary = secondary.replace("{journal}", journals[i])
+          .replace("{title}", titles[i])
+          .replace("{author}", authors[i])
+          .replace("{year}", years[i])
+          .replace("{author_short}", authors_short[i])
+          .replace("{title_short}", titles_short[i])
+          .replace("{journal}", journals[i])
         bibentries.push( {"primary": primary, "secondary": secondary, "id": keywords[i]} )
 
     @sel2_view.setItems(bibentries)

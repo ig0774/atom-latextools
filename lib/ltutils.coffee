@@ -29,7 +29,7 @@ module.exports.get_tex_root = (editor) ->
   else
     root = editor.getPath()
 
-  directives = parse_tex_directives editor
+  directives = parse_tex_directives editor, onlyFor: ['root']
   if directives.root?
     root = path.resolve(path.dirname(root), directives.root)
   return root
@@ -42,6 +42,27 @@ module.exports.is_file = (fname) ->
   catch e # statSync errors out if tex_src doesn't exist
     return false
   return s.isFile()
+
+
+# Check if a folder exists
+module.exports.is_dir = (dname) ->
+  try
+    s = fs.statSync dname
+  catch e
+    return false
+  s.isDirectory()
+
+
+# Convenience method to convert an array of args into an escaped string
+module.exports.quote = (list) ->
+  (for s in list
+    if /["\s]/.test(s) and not /'/.test(s)
+      "'#{s.replace(/(['\\])/g, '\\$1')}'"
+    else if /["'\s]/.test(s)
+      "\"#{s.replace(/(["'\\$`!])/g, '\\$1')}\""
+    else
+      String(s).replace(/([\\$`(){}!#&*|])/g, '\\$1')
+  ).join ' '
 
 
 # Find all matches of a regex starting from a master file
@@ -73,7 +94,7 @@ module.exports.find_in_files = (rootdir, src, rx) ->
         break
 
     if not_found
-      alert("Could not find #{src}")
+      atom.notifications.addWarning "Could not find #{src}"
       return null
 
     # i = 0 # old-style looping
@@ -95,7 +116,8 @@ module.exports.find_in_files = (rootdir, src, rx) ->
   try
     src_content = fs.readFileSync(file_path, 'utf-8')
   catch e
-    alert("Could not read #{file_path}; encoding issues?")
+    atom.notifications.addError "Could not read #{file_path}; encoding issues?",
+      detail: e.toString()
     return null
 
   src_content = src_content.replace(/%.*/g, "")
@@ -103,7 +125,7 @@ module.exports.find_in_files = (rootdir, src, rx) ->
   # Look for matches in the current file
   results = []
   while (r = rx.exec(src_content)) != null
-    console.log("found " + r[1] + " in " + file_path)
+    #console.log("found " + r[1] + " in " + file_path)
     results.push(r[1])
 
   # Now look for included files and recurse into them

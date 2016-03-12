@@ -1,4 +1,4 @@
-{LTool,get_tex_root} = require './ltutils'
+{LTool, get_tex_root, is_file} = require './ltutils'
 {exec, execFile} = require 'child_process'
 path = require 'path'
 
@@ -6,69 +6,16 @@ module.exports =
 
 class Viewer extends LTool
 
+  constructor: (viewerRegistry, ltConsole) ->
+    super(ltConsole)
+    @viewerRegistry = viewerRegistry
 
-  _jumpWindows: (texfile, pdffile, row, col, forward_sync, keep_focus) ->
-    sumatra_cmd = atom.config.get("latextools.win32.sumatra")
-    sumatra_args = [] # ["-reuse-instance"]
+  jumpToPdf: (te) ->
+    # if te isn't set, do nothing...
+    unless te?
+      console.log 'Could not find TextEditor for jump'
+      return
 
-    if forward_sync
-      sumatra_args = sumatra_args.concat(["-forward-search", '\"'+texfile+'\"', "#{row}"])
-
-    sumatra_args.push('\"'+pdffile+'\"')
-
-    command = sumatra_cmd + ' ' + sumatra_args.join(' ')
-    @ltConsole.addContent("Executing " + command, br = true)
-
-    exec command, {}, (err, stdout, stderr) =>
-      if err > 1 # weirdness
-        @ltConsole.addContent("ERROR #{err.code}: ", br=true)
-        @ltConsole.addContent(line, br=true) for line in stderr.split('\n')
-
-
-
-
-  _jumpDarwin: (texfile, pdffile, row, col, forward_sync, keep_focus) ->
-
-    if keep_focus
-      skim_args = "-r -g"
-    else
-      skim_args = "-r"
-
-    if forward_sync
-      skim_cmd = '/Applications/Skim.app/Contents/SharedSupport/displayline'
-      command = skim_cmd + " #{skim_args} #{row} \"#{pdffile}\" \"#{texfile}\""
-    else
-      displayfile_cmd = path.join(atom.packages.resolvePackagePath("latextools"), "lib/support/displayfile")
-      command = "sh " + displayfile_cmd + " #{skim_args} #{pdffile}"
-
-    @ltConsole.addContent("Executing " + command, br=true)
-
-    exec command, {}, (err, stdout, stderr) =>
-      if err  # weirdness
-        @ltConsole.addContent("ERROR #{err.code}: ", br=true)
-        @ltConsole.addContent(line, br=true) for line in stderr.split('\n')
-
-
-
-  _jumpLinux: ->
-    alert("Not implemented yet")
-
-  _jumpToPdf: (texfile, pdffile, row, col=1) ->
-
-    # TODO make modular, but for now...
-
-    forward_sync = atom.config.get("latextools.forwardSync")
-    keep_focus = atom.config.get("latextools.keepFocus")
-
-    switch process.platform
-      when "darwin" then @_jumpDarwin(texfile, pdffile, row, col, forward_sync, keep_focus)
-      when "win32" then @_jumpWindows(texfile, pdffile, row, col, forward_sync, keep_focus)
-      when "linux" then @_jumpLinux(texfile, pdffile, row, col, forward_sync, keep_focus)
-      else
-        alert("Sorry, no viewer for the current platform")
-
-  jumpToPdf: ->
-    te = atom.workspace.getActiveTextEditor()
     pt = te.getCursorBufferPosition()
     row = pt.row + 1 # Atom's rows/cols are 0-based, synctex's are 1-based
     col = pt.column + 1
@@ -84,5 +31,45 @@ class Viewer extends LTool
     tex_exts = atom.config.get("latextools.texFileExtensions")
     if parsed_master.ext in tex_exts && parsed_current.ext in tex_exts
       master_path_no_ext = path.join(parsed_master.dir, parsed_master.name)
+
       @ltConsole.addContent("Jump to #{row},#{col}")
-      @_jumpToPdf(current_file,master_path_no_ext + ".pdf",row,col)
+
+      pdf_file = master_path_no_ext + '.pdf'
+      if not is_file(pdf_file)
+        log_file = master_path_no_ext + '.log'
+        message =
+          "Could not find PDF file #{pdf_file}. If no errors appeared from " +
+          "the build, please check your log file, #{log_file}"
+
+        atom.notifications.addError message
+
+        @ltConsole.addContent(
+          message,
+          file: log_file,
+          level: 'error'
+        )
+        return
+
+      forward_sync = atom.config.get("latextools.forwardSync")
+      keep_focus = atom.config.get("latextools.keepFocus")
+
+      viewerName = atom.config.get("latextools.viewer")
+      viewerClass = @viewerRegistry.get viewerName
+
+      @ltConsole.addContent("Using viewer #{viewerName}")
+
+      unless viewerClass?
+        atom.notifications.addError(
+          "Could not find viewer #{viewerName}. Please check your config."
+        )
+        return if viewerName is 'default'
+        viewerClass = @viewerRegistry.get 'default'
+        return unless viewerClass?
+
+      viewer = new viewerClass(@ltConsole)
+
+      if forward_sync
+        viewer.forwardSync pdf_file, current_file, row, col,
+          keepFocus: keep_focus
+      else
+        viewer.viewFile pdf_file, keepFocus: keep_focus

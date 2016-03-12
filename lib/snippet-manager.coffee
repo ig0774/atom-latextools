@@ -17,8 +17,10 @@ class SnippetManager extends LTool
   wrapInCommand: ->
 
     # In case we haven't gotten the snippets service yet
-    if !@snippetService
-      alert("Still waiting for the snippets service to activate...")
+    unless @snippetService?
+      atom.notifications.addInfo(
+        "Still waiting for the snippets service to activate..."
+      )
       return
 
     te = atom.workspace.getActiveTextEditor()
@@ -37,8 +39,10 @@ class SnippetManager extends LTool
   wrapInEnvironment: ->
 
     # In case we haven't gotten the snippets service yet
-    if !@snippetService
-      alert("Still waiting for the snippets service to activate...")
+    unless @snippetService?
+      atom.notifications.addInfo(
+        "Still waiting for the snippets service to activate..."
+      )
       return
 
     te = atom.workspace.getActiveTextEditor()
@@ -57,10 +61,40 @@ class SnippetManager extends LTool
     te.addSelectionForBufferRange(cmd_range_end)
 
 
+
+  insertCmdEnv: (what) ->
+
+    max_length = 100 # Maximum length of LaTeX command (should be enough!)
+
+    unless @snippetService?
+      atom.notifications.addInfo(
+        "Still waiting for the snippets service to activate..."
+      )
+      return
+
+    te = atom.workspace.getActiveTextEditor()
+
+    # Using Atom's API:
+    te.selectToBeginningOfWord()
+    range = te.getSelectedBufferRange()
+    arg = te.getTextInBufferRange(range)
+    te.setSelectedBufferRange(range, '')
+
+    if arg
+      snippet = switch what
+        when "command"
+          "\\\\#{arg}\\{$1\\}$0"
+        when "environment"
+          "\\\\begin\{#{arg}\}\n$1\n\\\\end\{#{arg}\}$0"
+      @snippetService.insertSnippet(snippet)
+
+
   wrapIn: (cmd) ->
 
-    if !@snippetService
-      alert("Still waiting for the snippets service to activate...")
+    unless @snippetService?
+      atom.notifications.addInfo(
+        "Still waiting for the snippets service to activate..."
+      )
       return
 
     te = atom.workspace.getActiveTextEditor()
@@ -68,7 +102,11 @@ class SnippetManager extends LTool
     text = te.getTextInBufferRange(range)
 
     # Use snippets to easily remove selection, move cursor at end
-    snippet = "\\\\#{cmd}\\{#{text}\\}$0"
+    # (but only if there is some text)
+    if text
+      snippet = "\\\\#{cmd}\\{#{text}\\}$0"
+    else
+      snippet = "\\\\#{cmd}\\{$1\\}$0"
     @snippetService.insertSnippet(snippet)
 
 
@@ -94,4 +132,71 @@ class SnippetManager extends LTool
       stop()
 
     if !found
-      alert("No unmatched \\begin")
+      atom.notifications.addError "Could not find unmatched \\begin"
+
+  # Handle dollar-sign matching
+  # If there is a $ *after* the cursor, just move past it.
+  # If there is no $ after, and no $ before, add $[cursor]$
+  # Sane $$...$$ handling
+  # Add space between $ $ so highlighting doesn't go crazy
+  # Also handle selectioj
+
+  dollarSign: ->
+
+    te = atom.workspace.getActiveTextEditor()
+
+    # First, check if there is a selection, and if so, add $..$ around it
+    if text =  te.getSelectedText()
+      range = te.getSelectedBufferRange()
+      te.setSelectedBufferRange(range, '')
+      @snippetService.insertSnippet("\$#{text}\$")
+      return
+
+    cursor = te.getCursorBufferPosition()
+    text = te.getTextInBufferRange([[cursor.row,0],[cursor.row,cursor.column+1]])
+
+    pos = cursor.column
+
+    # if cursor followed by $ or $$, skip themm
+    if text[pos]? && text[pos] == '$'
+      te.moveRight()
+      if text[pos+1]? && text[pos+1] == '$'
+        te.moveRight()
+      return
+
+    # Here cursor is NOT followed by $. Then insert as needed
+    if (pos==0) || (pos>0) && !text[pos-1].match(/[a-zA-Z0-9\$\\]/)
+      snippet = "\$${1: }\$"
+      @snippetService.insertSnippet(snippet)
+      #te.addSelectionForBufferRange([[cursor.row,pos+1],[cursor.row, pos+2]])
+    else
+      te.insertText('$')
+
+
+  # Add matched quotes
+
+  quotes: (left, right, ch) ->
+
+    te = atom.workspace.getActiveTextEditor()
+
+    # First, check if there is a selection, and if so, add quotes around it
+    if text =  te.getSelectedText()
+      range = te.getSelectedBufferRange()
+      te.setSelectedBufferRange(range, '')
+      # Use snippet to leave selection on (same as ST)
+      @snippetService.insertSnippet("#{left}${1:#{text}}#{right}")
+      return
+
+    # Ensure there is no character preceding the quote
+
+    cursor = te.getCursorBufferPosition()
+    text = te.getTextInBufferRange([[cursor.row,0],[cursor.row,cursor.column]])
+
+    if text[cursor.column-1]? and
+        !text[cursor.column-1].match(/\s/) and
+        text[cursor.column-1] != left
+      te.insertText(ch)
+      return
+
+    snippet = "#{left}$0#{right}"
+    @snippetService.insertSnippet(snippet)
