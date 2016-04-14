@@ -5,6 +5,7 @@ LTSelectList2View = require './ltselectlist2-view'
 get_bib_completions = require './parsers/get-bib-completions'
 path = require 'path'
 fs = require 'fs'
+format = require 'string-format'
 
 module.exports =
 
@@ -131,7 +132,7 @@ class CompletionManager extends LTool
 
     bibentries = []
     for b in bibs
-      [keywords, titles, authors, years, authors_short, titles_short, journals] = get_bib_completions(b)
+      entries = get_bib_completions(b)
       # TODO formatting here
       item_fmt = atom.config.get("latextools.citePanelFormat")
 
@@ -143,22 +144,11 @@ class CompletionManager extends LTool
         return
 
       # Inelegant but safe
-      for i in [0...keywords.length]
-        primary = item_fmt[0].replace("{keyword}", keywords[i])
-          .replace("{title}", titles[i])
-          .replace("{author}", authors[i])
-          .replace("{year}", years[i])
-          .replace("{author_short}", authors_short[i])
-          .replace("{title_short}", titles_short[i])
-          .replace("{journal}", journals[i])
-        secondary = item_fmt[1].replace("{keyword}", keywords[i])
-          .replace("{title}", titles[i])
-          .replace("{author}", authors[i])
-          .replace("{year}", years[i])
-          .replace("{author_short}", authors_short[i])
-          .replace("{title_short}", titles_short[i])
-          .replace("{journal}", journals[i])
-        bibentries.push( {"primary": primary, "secondary": secondary, "id": keywords[i]} )
+      for entry in entries
+        bibentries.push
+          primary: format(item_fmt[0], entry)
+          secondary: format(item_fmt[1], entry)
+          id: entry['keyword']
 
     @sel2_view.setItems(bibentries)
     @sel2_view.start (item) =>
