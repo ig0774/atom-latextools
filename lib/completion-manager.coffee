@@ -145,7 +145,6 @@ class CompletionManager extends LTool
 
       # Inelegant but safe
       for entry in entries
-        console.log entry
         bibentries.push
           primary: format(item_fmt[0], entry)
           secondary: format(item_fmt[1], entry)

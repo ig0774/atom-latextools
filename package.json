@@ -19,6 +19,7 @@
     "atom-space-pen-views": "^2.1.0",
     "esrever": "^0.2.0",
     "string-format": "^0.5.0"
+<<<<<<< HEAD
   },
   "providedServices": {
     "autocomplete.provider": {
@@ -26,6 +27,8 @@
         "2.0.0": "getProvider"
       }
     }
+=======
+>>>>>>> better_bibliography
   },
   "consumedServices": {
     "snippets": {
