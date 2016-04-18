@@ -82,8 +82,6 @@ class Builder extends LTool
     @ltConsole.addContent("Processing file #{filebase} (#{filename}) in directory #{filedir}")
 
     builderName = atom.config.get("latextools.builder")
-    builderName = "texify-latexmk" if builderName not in
-      ["texify-latexmk", "texify", "latexmk"]
 
     _builderName =
       if builderName is "texify-latexmk"
@@ -101,7 +99,7 @@ class Builder extends LTool
 
     unless builderClass?
       atom.notifications.addError(
-        "Could not find viewer #{_builderName}. Please check your config."
+        "Could not find builder #{_builderName}. Please check your config."
       )
       return if builderName is 'texify-latexmk'
       builderClass = @builderRegistry.get(
