@@ -1,5 +1,6 @@
 LTConsole = null
 Builder = null
+BuilderRegistry = null
 Viewer = null
 ViewerRegistry = null
 CompletionManager = null
@@ -139,10 +140,10 @@ module.exports = Latextools =
       type: 'string'
       default: "texify-latexmk"
       order: 16
-    builderPath:
-      type: 'string'
-      default: ""
-      order: 17
+    # builderPath:
+    #   type: 'string'
+    #   default: ""
+    #   order: 17
     builderSettings:
       type: 'object'
       properties:
@@ -183,12 +184,18 @@ module.exports = Latextools =
     @builder = null
     @completionManager = null
     @snippetManager = null
+    @builderRegistry = null
     @viewerRegistry = null
 
     # function to register a viewer with latextools
     @addViewer = (names, cls) =>
       @requireIfNeeded ['viewer']
       @viewerRegistry.add names, cls
+
+    # function to register a builder with latextools
+    @addBuilder = (names, cls) =>
+      @requireIfNeeded ['builder']
+      @builderRegistry.add names, cls
 
     # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
     @subscriptions = new CompositeDisposable
@@ -327,9 +334,21 @@ module.exports = Latextools =
             @viewer = new Viewer @viewerRegistry, @ltConsole
         when "builder"
           unless Builder?
+            BuilderRegistry = require './builder-registry'
+            @builderRegistry = new BuilderRegistry
+
+            @builderRegistry.add 'latexmk',
+              require './builders/latexmk-builder'
+            if process.platform is 'win32'
+              @builderRegistry.add 'texify',
+                require './builders/texify-builder'
+
             Builder = require './builder'
-            @builder = new Builder(@ltConsole)
-            @builder.viewer = @viewer # NOTE: MUST be loaded first!
+            @builder = new Builder @builderRegistry, @ltConsole
+
+            # ensure viewer is loaded
+            requireIfNeeded 'viewer' unless @viewer?
+            @builder.viewer = @viewer
         when "completion-manager"
           CompletionManager ?= require('./completion-manager').CompletionManager
           @completionManager ?= new CompletionManager(@ltConsole)
