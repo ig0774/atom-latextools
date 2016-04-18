@@ -6,9 +6,8 @@ module.exports =
 
 class Viewer extends LTool
 
-  constructor: (viewerRegistry, ltConsole) ->
+  constructor: (@viewerRegistry, ltConsole) ->
     super(ltConsole)
-    @viewerRegistry = viewerRegistry
 
   jumpToPdf: (te) ->
     # if te isn't set, do nothing...

@@ -1,5 +1,6 @@
 LTConsole = null
 Builder = null
+builderRegistry = null
 Viewer = null
 ViewerRegistry = null
 CompletionManager = null
@@ -152,10 +153,10 @@ module.exports = Latextools =
       type: 'string'
       default: "texify-latexmk"
       order: 16
-    builderPath:
-      type: 'string'
-      default: ""
-      order: 17
+    # builderPath:
+    #   type: 'string'
+    #   default: ""
+    #   order: 17
     builderSettings:
       type: 'object'
       properties:
@@ -356,9 +357,19 @@ module.exports = Latextools =
 
           @viewer ?= new Viewer @viewerRegistry, @ltConsole
         when "builder"
+          BuilderRegistry = require './builder-registry'
           Builder ?= require './builder'
+
+          unless @builderRegistry?
+            @builderRegistry = new BuilderRegistry
+            @builderRegistry.add 'latexmk',
+              require './builders/latexmk-builder'
+            if process.platform is 'win32'
+              @builderRegistry.add 'texify',
+                require './builders/texify-builder'
+
           unless @builder?
-            @builder = new Builder(@ltConsole)
+            @builder = new Builder @builderRegistry, @ltConsole
 
             # ensure viewer is loaded before builder
             requireIfNeeded ['viewer'] unless @viewer?

@@ -10,58 +10,8 @@ module.exports =
 
 class Builder extends LTool
 
-  # The next two methods simply return the command line to execute
-  # The actual processing is done in the build method
-  #
-  # dir: directory of master file
-  # texfile: the base name (name+ext, no directory) of the master file
-  # texfilename: name only (no ext no dir) of the master file
-  # user_options: any user-specified options for the tex compiler
-  # user_program: user-specified tex compiler
-  #
-  # These methods construct a command line that includes both required
-  # options (e.g, to enable synctex, or to get PDF output) and user-specified
-  # ones. It also selects the appropriate tex compiler.
-
-  latexmk: (dir, texfile, texfilename, user_options, user_program) ->
-    @ltConsole.addContent("latexmk builder")
-
-    user_program = 'pdf' if user_program is 'pdflatex'
-
-    options =  ["-cd", "-e", "-f", "-#{user_program}",
-      "-interaction=nonstopmode", "-synctex=1"]
-
-    for texopt in user_options
-      options.push "-latexoption=\"#{texopt}\""
-
-    command = ["latexmk"].concat(options, "\"#{texfile}\"").join(' ')
-    @ltConsole.addContent(command)
-
-    return command
-
-  texify: (dir, texfile, texfilename, user_options, user_program) ->
-    @ltConsole.addContent("texify builder")
-
-    options = ["-b", "-p"]
-
-    user_program = switch user_program
-      when 'pdflatex' then 'pdftex'
-      when 'xelatex' then 'xetex'
-      when 'lualatex' then 'luatex'
-      else user_program
-
-    options.push "--engine=#{user_program}"
-
-    tex_options = ["--synctex=1"].concat user_options
-    tex_options_string = "--tex-option=\"#{tex_options.join(' ')}\""
-    options = options.concat [tex_options_string]
-
-    program = "pdflatex" # unused for now
-
-    command = ["texify"].concat(options, "\"#{texfile}\"").join(' ')
-    @ltConsole.addContent(command)
-
-    return command
+  constructor: (@builderRegistry, ltConsole) ->
+    super(ltConsole)
 
   build: (te) ->
     return unless te?
@@ -127,103 +77,113 @@ class Builder extends LTool
 
     @ltConsole.addContent("Processing file #{filebase} (#{filename}) in directory #{filedir}")
 
-    builder = atom.config.get("latextools.builder")
-    builder = "texify-latexmk" if builder not in ["texify-latexmk"]
+    builderName = atom.config.get("latextools.builder")
 
-    # Built-in processing via texify or latexmk
-    if builder=="texify-latexmk"
-
-      # first, get command to execute, with options
-      command =
-        if process.platform is "win32" and
-            atom.config.get("latextools.win32.distro") isnt "texlive"
-          @texify(filedir, filebase, filename, user_options, user_program)
+    _builderName =
+      if builderName is "texify-latexmk"
+        if process.platform isnt 'win32' or \
+            atom.config.get('latextools.win32.distro').toLowerCase() is 'texlive'
+          'latexmk'
         else
-          @latexmk(filedir, filebase, filename, user_options, user_program)
+          'texify'
+      else
+        builderName
 
-      cmd_env.MYTEST = "Hello, world!"
-      command = command
+    builderClass = @builderRegistry.get _builderName
 
-      options =
-        cwd: filedir
-        env: cmd_env
-        # 25 MB
-        maxBuffer: 26214400
+    @ltConsole.addContent("Using builder #{builderName}")
 
-      # cd to dir and run command; add output to console for now
-      exec command, options, (err, stdout, stderr) =>
-        # If there were errors, print them and return
-        # if err
-        #   @ltConsole.addContent("BUILD ERROR!", br=true)
-        #   @ltConsole.addContent(line, br=true) for line in stdout.split('\n')
-        #   @ltConsole.addContent(line, br=true) for line in stderr.split('\n')
-        # return
-        # Parse error log
-        fulllogfile = path.join(filedir, filename + ".log") # takes care of quotes
-        @ltConsole.addContent("Parsing #{fulllogfile}")
-        try
-          log = fs.readFileSync(fulllogfile, 'utf8')
-        catch error
-          @ltConsole.addContent("Could not read log file!")
-          atom.notifications.addError(
-            "Could not read log file #{fulllogfile}",
-            detail: error
-          )
-          return
-
-
-        # We need to cd to the root file directory for the
-        # file-matching logic to work with texlive (miktex reports full paths)
-        # NOTE: we could also do this earlier and avoid setting cwd in the
-        # exec call
-        process.chdir(filedir)
-        [errors, warnings] = parse_tex_log(log)
-
-        @ltConsole.addContent("ERRORS:")
-        for err in errors
-          do (err) =>
-            if err[1] == -1
-              err_string = "#{err[0]}: #{err[2]} [#{err[3]}]"
-              @ltConsole.addContent err_string, level: 'error'
-            else
-              err_string = "#{err[0]}:#{err[1]}: #{err[2]} [#{err[3]}]"
-              file = switch
-                when not err[0]? or err[0] is '[no file]' then null
-                when path.isAbsolute(err[0]) then err[0]
-                else path.join(filedir, err[0])
-
-              @ltConsole.addContent err_string,
-                file: file
-                line: err[1]
-                level: 'error'
-
-        @ltConsole.addContent("WARNINGS:")
-        for warn in warnings
-          do (warn) =>
-            if warn[1] == -1
-              warn_string = "#{warn[0]}: #{warn[2]}"
-              @ltConsole.addContent warn_string, level: 'warning'
-            else
-              warn_string = "#{warn[0]}:#{warn[1]}: #{warn[2]}"
-              file = switch
-                when not warn[0]? or warn[0] is '[no file]' then null
-                when path.isAbsolute(warn[0]) then warn[0]
-                else path.join(filedir, warn[0])
-
-              @ltConsole.addContent warn_string,
-                file: file
-                line: warn[1]
-                level: 'warning'
-
-        unless errors.length > 0
-          atom.notifications.addSuccess(
-            "Build completed with 0 errors and #{warnings.length} warnings"
-          )
+    unless builderClass?
+      atom.notifications.addError(
+        "Could not find builder #{_builderName}. Please check your config."
+      )
+      return if builderName is 'texify-latexmk'
+      builderClass = @builderRegistry.get(
+        if process.platform is 'win32' and \
+            atom.config.get('latextools.win32.distro') is 'miktex'
+          'texify'
         else
-          atom.notifications.addError(
-            "Build completed with #{errors.length} errors and #{warnings.length} warnings"
-          )
+          'latexmk'
+      )
+      return unless builderClass?
 
-        # Jump to PDF
-        @ltConsole.addContent("Jumping to PDF...")
-        @viewer.jumpToPdf(te)
+    builder = new builderClass(@ltConsole)
+
+    Promise.resolve(builder.build(
+      filedir, filebase, filename, user_options, user_program, cmd_env
+    )).then =>
+      # If there were errors, print them and return
+      # if err
+      #   @ltConsole.addContent("BUILD ERROR!", br=true)
+      #   @ltConsole.addContent(line, br=true) for line in stdout.split('\n')
+      #   @ltConsole.addContent(line, br=true) for line in stderr.split('\n')
+      # return
+      # Parse error log
+      fulllogfile = path.join(filedir, filename + ".log") # takes care of quotes
+      @ltConsole.addContent("Parsing #{fulllogfile}")
+      try
+        log = fs.readFileSync(fulllogfile, 'utf8')
+      catch error
+        @ltConsole.addContent("Could not read log file!")
+        atom.notifications.addError(
+          "Could not read log file #{fulllogfile}",
+          detail: error
+        )
+        return
+
+
+      # We need to cd to the root file directory for the
+      # file-matching logic to work with texlive (miktex reports full paths)
+      # NOTE: we could also do this earlier and avoid setting cwd in the
+      # exec call
+      process.chdir(filedir)
+      [errors, warnings] = parse_tex_log(log)
+
+      @ltConsole.addContent("ERRORS:")
+      for err in errors
+        do (err) =>
+          if err[1] == -1
+            err_string = "#{err[0]}: #{err[2]} [#{err[3]}]"
+            @ltConsole.addContent err_string, level: 'error'
+          else
+            err_string = "#{err[0]}:#{err[1]}: #{err[2]} [#{err[3]}]"
+            file = switch
+              when not err[0]? or err[0] is '[no file]' then null
+              when path.isAbsolute(err[0]) then err[0]
+              else path.join(filedir, err[0])
+
+            @ltConsole.addContent err_string,
+              file: file
+              line: err[1]
+              level: 'error'
+
+      @ltConsole.addContent("WARNINGS:")
+      for warn in warnings
+        do (warn) =>
+          if warn[1] == -1
+            warn_string = "#{warn[0]}: #{warn[2]}"
+            @ltConsole.addContent warn_string, level: 'warning'
+          else
+            warn_string = "#{warn[0]}:#{warn[1]}: #{warn[2]}"
+            file = switch
+              when not warn[0]? or warn[0] is '[no file]' then null
+              when path.isAbsolute(warn[0]) then warn[0]
+              else path.join(filedir, warn[0])
+
+            @ltConsole.addContent warn_string,
+              file: file
+              line: warn[1]
+              level: 'warning'
+
+      unless errors.length > 0
+        atom.notifications.addSuccess(
+          "Build completed with 0 errors and #{warnings.length} warnings"
+        )
+      else
+        atom.notifications.addError(
+          "Build completed with #{errors.length} errors and #{warnings.length} warnings"
+        )
+
+      # Jump to PDF
+      @ltConsole.addContent("Jumping to PDF...")
+      @viewer.jumpToPdf(te)
