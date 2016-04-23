@@ -16,10 +16,10 @@ class TexifyBuilder extends BaseBuilder
     options.push "--engine=#{user_program}"
 
     tex_options = ["--synctex=1"].concat user_options
-    tex_options_string = "--tex-option=\"#{tex_options.join(' ')}\""
+    tex_options_string = "--tex-option=#{tex_options.join(' ')}"
     options = options.concat [tex_options_string]
 
-    command = ["texify"].concat(options, "\"#{texfile}\"")
+    command = ["texify"].concat(options, "#{texfile}")
 
     @runCommand command,
       cwd: dir
