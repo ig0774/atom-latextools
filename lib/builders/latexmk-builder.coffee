@@ -11,7 +11,7 @@ class LatexmkBuilder extends BaseBuilder
       "-interaction=nonstopmode", "-synctex=1"]
 
     for texopt in user_options
-      options.push "-latexoption=\"#{texopt}\""
+      options.push "-latexoption=#{texopt}"
 
     command = ["latexmk"].concat(options, "#{texfile}")
 
