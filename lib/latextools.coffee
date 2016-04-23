@@ -205,6 +205,11 @@ module.exports = Latextools =
       @requireIfNeeded ['viewer']
       @viewerRegistry.add names, cls
 
+    # function to register a builder with latextools
+    @addBuilder = (names, cls) =>
+      @requireIfNeeded ['builder']
+      @builderRegistry.add names, cls
+
     # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
     @subscriptions = new CompositeDisposable
 
