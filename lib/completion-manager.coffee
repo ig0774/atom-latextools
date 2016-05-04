@@ -25,7 +25,12 @@ class CompletionManager extends LTool
     #ref_rx = /\\(?:eq|page|v|V|auto|name|c|C|cpage)?ref\{/
     ref_rx_rev = /^\{fer(?:qe|egap|v|V|otua|eman|c|C|egapc)?/
     #cite_rx = /\\cite[a-z\*]*?(?:\[.*?\]){0,2}\{/
-    cite_rx_rev = /^([^{},]*)(?:,[^{},]*)*\{(?:\].*?\[){0,2}([a-zX*]*?)etic\\/
+    # Avoid trigger-happy autocomplete: only match (and capture) text
+    # after commas or braces *if* invoked from keybinding
+    if keybinding
+      cite_rx_rev = /^([^{},]*)(?:,[^{},]*)*\{(?:\].*?\[){0,2}([a-zX*]*?)etic\\/
+    else
+      cite_rx_rev = /^(?:,[^{},]*)*\{(?:\].*?\[){0,2}([a-zX*]*?)etic\\/
 
     current_point = te.getCursorBufferPosition()
     initial_point = [current_point.row, Math.max(0,current_point.column - max_length)]
@@ -83,7 +88,7 @@ class CompletionManager extends LTool
 
     # TODO add partially specified label to search field
     @sel_view.setItems(labels)
-    @sel_view.start (item) =>
+    @sel_view.start te, (item) =>
       te.insertText(item)
       # see if we need to skip a brace
       pt = te.getCursorBufferPosition()
@@ -151,7 +156,7 @@ class CompletionManager extends LTool
           id: entry['keyword']
 
     @sel2_view.setItems(bibentries)
-    @sel2_view.start (item) =>
+    @sel2_view.start te, (item) =>
       te.insertText(item.id)
       # see if we need to skip a brace
       pt = te.getCursorBufferPosition()
