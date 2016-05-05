@@ -380,7 +380,7 @@ module.exports = Latextools =
             requireIfNeeded ['viewer'] unless @viewer?
             @builder.viewer = @viewer
         when "completion-manager"
-          CompletionManager ?= require './completion-manager'
+          CompletionManager ?= require('./completion-manager').CompletionManager
           @completionManager ?= new CompletionManager(@ltConsole)
         when "snippet-manager"
           SnippetManager ?= require './snippet-manager'
