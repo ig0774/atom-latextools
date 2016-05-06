@@ -56,7 +56,7 @@ module.exports.cite_rx_rev = cite_rx_rev = ///^
 
 # differs from the above in having capture groups to capture any
 # input
-module.exports.cite_rx_rev_key_press = cite_rx_rev_key_binding = ///^
+module.exports.cite_rx_rev_key_press = cite_rx_rev_key_press = ///^
 (?:
 (?:([^\[\],]*)(?:,[^\[\],]*)*\[\}[^\{]*\{
   \*?etouq(?:kcolb|txet)(?:ngierof|nehpyh))|
