@@ -309,14 +309,6 @@ module.exports = Latextools =
       @cwlProvider.loadCompletions()
       @cwlProvider
 
-
-  getProvider: ->
-    # if using cwl-completion, load autocomplete provider
-    if atom.config.get("latextools.commandCompletion") != 'never'
-      @cwlProvider = require './ltcwl-completion'
-      @cwlProvider.loadCompletions()
-      @cwlProvider
-
   deactivate: ->
     @subscriptions.dispose()
     @ltConsole.destroy()
