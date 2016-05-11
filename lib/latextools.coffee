@@ -1,6 +1,6 @@
 LTConsole = null
 Builder = null
-builderRegistry = null
+BuilderRegistry = null
 Viewer = null
 ViewerRegistry = null
 CompletionManager = null
@@ -153,10 +153,12 @@ module.exports = Latextools =
       type: 'string'
       default: "texify-latexmk"
       order: 16
+
     # builderPath:
     #   type: 'string'
     #   default: ""
     #   order: 17
+
     builderSettings:
       type: 'object'
       properties:
@@ -198,6 +200,7 @@ module.exports = Latextools =
     @completionManager = null
     @snippetManager = null
     @viewerRegistry = null
+    @builderRegistry = null
     @cwlProvider = null
 
     # function to register a viewer with latextools
@@ -375,4 +378,4 @@ module.exports = Latextools =
           @completionManager ?= new CompletionManager(@ltConsole)
         when "snippet-manager"
           SnippetManager ?= require './snippet-manager'
-          @snippetManager ?= new SnippetManager(@ltConsole, @ltProject)
+          @snippetManager ?= new SnippetManager(@ltConsole)
