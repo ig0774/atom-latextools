@@ -199,8 +199,8 @@ module.exports = Latextools =
     @builder = null
     @completionManager = null
     @snippetManager = null
-    @viewerRegistry = null
     @builderRegistry = null
+    @viewerRegistry = null
     @cwlProvider = null
 
     # function to register a viewer with latextools
