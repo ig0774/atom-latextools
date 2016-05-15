@@ -42,7 +42,6 @@ module.exports = Latextools =
     viewer:
       type: 'string'
       default: 'default'
-      enum: ['default', 'pdf-view']
       order: 6.5
 
     # commandCompletion:
@@ -121,15 +120,18 @@ module.exports = Latextools =
         texpath:
           type: 'string'
           default: "$PATH:/usr/texbin"
-        # python2:
-        #   type: 'string'
-        #   default: ""
+        python:
+          type: 'string'
+          description: "Path to a Python interpreter that includes the DBus library"
+          default: ""
         atomExecutable:
           type: 'string'
+          description: "Path to Atom"
           default: ""
-        # syncWait:
-        #   type: 'number'
-        #   default: 1.5
+        syncWait:
+          type: 'number'
+          description: "Time to wait between launching Evince and syncing"
+          default: 1.0
         # keepFocusDelay:
         #   type: 'number'
         #   default: 0.5
@@ -185,10 +187,28 @@ module.exports = Latextools =
     @snippetManager = null
     @viewerRegistry = null
 
+    # ensure initial viewer drop-down is populated
+    currentViewer = atom.config.get 'latextools.viewer'
+    viewerList = ['pdf-view']
+    switch process.platform
+      when 'darwin'
+        viewerList.push 'skim'
+      when 'win32'
+        viewerList.push 'sumatra'
+      else
+        viewerList.push 'evince'
+        viewerList.push 'okular'
+    viewerList.push currentViewer if currentViewer isnt 'default' and
+      currentViewer not in viewerList
+    viewerList = viewerList.sort()
+    viewerList.unshift 'default'
+    atom.config.getSchema('latextools.viewer').enum = viewerList
+
     # function to register a viewer with latextools
     @addViewer = (names, cls) =>
       @requireIfNeeded ['viewer']
       @viewerRegistry.add names, cls
+      @viewerRegistry.updateConfigSchema()
 
     # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
     @subscriptions = new CompositeDisposable
@@ -322,6 +342,10 @@ module.exports = Latextools =
               else
                 @viewerRegistry.add ['default', 'okular'],
                   require './viewers/okular-viewer'
+                @viewerRegistry.add 'evince',
+                  require './viewers/evince-viewer'
+
+            @viewerRegistry.updateConfigSchema()
 
             Viewer = require './viewer'
             @viewer = new Viewer @viewerRegistry, @ltConsole
