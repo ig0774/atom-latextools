@@ -3,15 +3,8 @@
 module.exports =
 
 class SnippetManager extends LTool
-  snippetService: null
-
-  constructor: ->
-    super
-    console.log("Created SnippetManager")
 
   setService: (service) ->
-    console.log("Set snippet service")
-    console.log(service)
     @snippetService = service
 
   wrapInCommand: ->
