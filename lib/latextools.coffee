@@ -43,7 +43,6 @@ module.exports = Latextools =
     viewer:
       type: 'string'
       default: 'default'
-      enum: ['default', 'pdf-view']
       order: 6.5
 
     commandCompletion:
@@ -135,15 +134,18 @@ module.exports = Latextools =
         texpath:
           type: 'string'
           default: "$PATH:/usr/texbin"
-        # python2:
-        #   type: 'string'
-        #   default: ""
+        python:
+          type: 'string'
+          description: "Path to a Python interpreter that includes the DBus library"
+          default: ""
         atomExecutable:
           type: 'string'
+          description: "Path to Atom"
           default: ""
-        # syncWait:
-        #   type: 'number'
-        #   default: 1.5
+        syncWait:
+          type: 'number'
+          description: "Time to wait between launching Evince and syncing"
+          default: 1.0
         # keepFocusDelay:
         #   type: 'number'
         #   default: 0.5
@@ -203,10 +205,21 @@ module.exports = Latextools =
     @viewerRegistry = null
     @cwlProvider = null
 
+    # ensure initial viewer drop-down is populated
+    currentViewer = atom.config.get 'latextools.viewer'
+    viewerList = ['pdf-view']
+    viewerList.push currentViewer if currentViewer isnt 'pdf-view' and
+      currentViewer isnt 'default'
+    viewerList = viewerList.sort()
+    viewerList.unshift 'default'
+    atom.config.schema.properties.latextools.properties.viewer.enum =
+      viewerList
+
     # function to register a viewer with latextools
     @addViewer = (names, cls) =>
       @requireIfNeeded ['viewer']
       @viewerRegistry.add names, cls
+      @viewerRegistry.updateConfigSchema()
 
     # function to register a builder with latextools
     @addBuilder = (names, cls) =>
@@ -353,6 +366,10 @@ module.exports = Latextools =
               else
                 @viewerRegistry.add ['default', 'okular'],
                   require './viewers/okular-viewer'
+                @viewerRegistry.add 'evince',
+                  require './viewers/evince-viewer'
+
+            @viewerRegistry.updateConfigSchema()
 
           @viewer ?= new Viewer @viewerRegistry, @ltConsole
         when "builder"

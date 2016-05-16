@@ -17,3 +17,13 @@ class ViewerRegistry
   get: (name) ->
     return @viewers[name] if name of @viewers
     undefined
+
+  updateConfigSchema: ->
+    viewers = Object.keys(@viewers)
+      .filter((n) -> n isnt 'default')
+      .sort()
+
+    viewers.unshift('default')
+
+    atom.config.schema.properties.latextools.properties.viewer.enum =
+      viewers
