@@ -25,5 +25,4 @@ class ViewerRegistry
 
     viewers.unshift('default')
 
-    atom.config.schema.properties.latextools.properties.viewer.enum =
-      viewers
+    atom.config.getSchema('latextools.viewer').enum = viewerList
