@@ -70,8 +70,8 @@ class EvinceViewer extends BaseViewer
 
   forwardSync: (pdfFile, texFile, line, col, opts = {}) ->
     @viewFile(pdfFile, opts).then =>
-      @getPython().then((python) ->
-        setTimeout((->
+      @getPython().then (python) =>
+        @doAfterPause ->
           execFile python, [
             path.join(
               window.atom.packages.resolvePackagePath('latextools'),
@@ -79,14 +79,11 @@ class EvinceViewer extends BaseViewer
             ),
             pdfFile, "#{line}", texFile
           ]
-        ), parseFloat(atom.config.get("latextools.#{process.platform}.syncWait")) * 1000, 1000)
-      )
-
 
   viewFile: (pdfFile, opts = {}) ->
     keepFocus = opts?.keepFocus
 
     @evinceIsRunning(pdfFile).then(
-      => @launchEvince(pdfFile) if not keepFocus,
+      => execFile('evince', [pdfFile]) if not keepFocus,
       => @launchEvince(pdfFile)
     )
