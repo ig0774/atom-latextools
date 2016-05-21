@@ -1,5 +1,5 @@
 BaseViewer = require './base-viewer'
-{execFileSync} = require 'child_process'
+{execFile} = require 'child_process'
 
 module.exports =
 class OkularViewer extends BaseViewer
@@ -8,31 +8,34 @@ class OkularViewer extends BaseViewer
     args.push "--noraise" if opts?.keepFocus
     args
 
-  okularIsRunning: (pdfFile) ->
+  okularIsRunning: ->
     new Promise (resolve, reject) ->
       execFile 'ps', ['xw'], (err, stdout, stderr) ->
-        if (err isnt 0 or
-            stdout.indexOf("okular") < 0 or
-            stdout.indexOf("--unique") <0)
-          reject()
-        else
+        unless err?
+          for line in stdout.match /^.*([\n\r]+|$)/gm
+            if line.indexOf("okular") > 0 and line.indexOf("--unique") > 0
+              resolve()
+              break
+
+        reject()
+
+  ensureOkular: ->
+    @okularIsRunning().catch ->
+      new Promise (resolve, reject) ->
+        execFile 'okular', ['--unique'], (err, stdout, stderr) ->
           resolve()
 
-  ensureOkular: (opts = {}) ->
-    @okularIsRunning().catch ->
-      execFileSync 'okular', ['--unique']
-
   forwardSync: (pdfFile, texFile, line, col, opts = {}) ->
-    @ensureOkular(opts).then ->
-      doAfterPause ->
+    @ensureOkular().then =>
+      @doAfterPause =>
         args = _getArgs opts
         args.push "#{pdfFile}#src:#{line}#{texFile}"
         args.unshift 'okular'
         @runViewer args
 
   viewFile: (pdfFile, opts = {}) ->
-    @ensureOkular(opts).then ->
-      doAfterPause ->
+    @ensureOkular().then =>
+      @doAfterPause =>
         args = _getArgs opts
         args.push "#{pdfFile}"
         args.unshift 'okular'
