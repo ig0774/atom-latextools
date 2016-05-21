@@ -16,7 +16,6 @@ class EvinceViewer extends BaseViewer
       done = false
       for python in pythons
         unless done
-          console.log "Running #{quote([python, '-c', 'import dbus'])}"
           try
             execFileSync python, ['-c', 'import dbus']
             resolve(python)
@@ -51,7 +50,7 @@ class EvinceViewer extends BaseViewer
   evinceIsRunning: (pdfFile) ->
     new Promise (resolve, reject) ->
       execFile 'ps', ['xw'], (err, stdout, stderr) ->
-        if err isnt 0 or stdout.indexOf("evince #{pdfFile}") < 0
+        if err? or stdout.indexOf("evince #{pdfFile}") < 0
           reject()
         else
           resolve()
@@ -68,22 +67,34 @@ class EvinceViewer extends BaseViewer
       @ltConsole.addContent "Executing #{quote(command)}"
       execFile command[0], command[1..], cwd: cwd
 
+  sync: (pdfFile, texFile, line, col, python) ->
+    execFile python, [
+      path.join(
+        window.atom.packages.resolvePackagePath('latextools'),
+        'lib', 'support', 'evince_forward_search'
+      ),
+      pdfFile, "#{line}", texFile
+    ]
+
   forwardSync: (pdfFile, texFile, line, col, opts = {}) ->
-    @viewFile(pdfFile, opts).then =>
+    @viewFile(pdfFile, opts).then (pause) =>
       @getPython().then (python) =>
-        @doAfterPause ->
-          execFile python, [
-            path.join(
-              window.atom.packages.resolvePackagePath('latextools'),
-              'lib', 'support', 'evince_forward_search'
-            ),
-            pdfFile, "#{line}", texFile
-          ]
+        if pause
+          @doAfterPause => @sync(pdfFile, texFile, line, col, python)
+        else
+          @sync(pdfFile, texFile, line, col, python)
 
   viewFile: (pdfFile, opts = {}) ->
     keepFocus = opts?.keepFocus
 
     @evinceIsRunning(pdfFile).then(
-      => execFile('evince', [pdfFile]) if not keepFocus,
-      => @launchEvince(pdfFile)
+      (->
+        if not keepFocus
+          execFile('evince', [pdfFile])
+          true
+        else
+          false),
+      =>
+        @launchEvince(pdfFile)
+        true
     )
