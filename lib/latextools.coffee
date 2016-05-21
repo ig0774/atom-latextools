@@ -249,6 +249,23 @@ module.exports = Latextools =
     viewerList.unshift 'default'
     atom.config.getSchema('latextools.viewer').enum = viewerList
 
+    # ensure initial viewer drop-down is populated
+    currentViewer = atom.config.get 'latextools.viewer'
+    viewerList = ['pdf-view']
+    switch process.platform
+      when 'darwin'
+        viewerList.push 'skim'
+      when 'win32'
+        viewerList.push 'sumatra'
+      else
+        viewerList.push 'evince'
+        viewerList.push 'okular'
+    viewerList.push currentViewer if currentViewer isnt 'default' and
+      currentViewer not in viewerList
+    viewerList = viewerList.sort()
+    viewerList.unshift 'default'
+    atom.config.getSchema('latextools.viewer').enum = viewerList
+
     # function to register a viewer with latextools
     @addViewer = (names, cls) =>
       @requireIfNeeded ['viewer']
