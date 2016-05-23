@@ -3,6 +3,7 @@ LTSimpleSelectList = require './views/ltsimple-select-list-view'
 LTTwoLineSelectList = require './views/lttwo-line-select-list-view'
 #get_ref_completions = require './get-ref-completions'
 get_bib_completions = require './parsers/get-bib-completions'
+kpsewhich = require './commands/kpsewhich'
 path = require 'path'
 fs = require 'fs'
 format = require 'string-format'
@@ -185,13 +186,18 @@ class CompletionManager extends LTool
 
     fname = get_tex_root(te)
 
-    parsed_fname = path.parse(fname)
-
-    filedir = parsed_fname.dir
-    filebase = parsed_fname.base  # name only includes the name (no dir, no ext)
-
     bib_rx = /\\(?:bibliography|nobibliography|addbibresource)\{([^\}]+)\}/g
-    raw_bibs = find_in_files(filedir, filebase, bib_rx)
+
+    try
+      parsed_fname = path.parse(fname)
+      filedir = parsed_fname.dir
+      #  name only includes the name (no dir, no ext)
+      filebase = parsed_fname.base
+      raw_bibs = find_in_files(filedir, filebase, bib_rx)
+    catch
+      # no file name, so simply parse the active buffer
+      raw_bibs = []
+      te.scan bib_rx, (match) -> raw_bibs.push match.match[1]
 
     # Split multiple bib files
     bibs = []
@@ -200,10 +206,23 @@ class CompletionManager extends LTool
 
     # Trim and take care of .bib extension
     bibs = for b in bibs
-      b = path.resolve(filedir, b) unless path.isAbsolute(b)
-      b = b.trim() + '.bib' unless path.extname(b) is '.bib'
+      base = b.trim() + '.bib' unless path.extname(b) is '.bib'
+      b = if path.isAbsolute(base)
+        base
+      else
+        if filedir?
+          path.resolve(filedir, base)
+        else
+          null
+
       # Check to see if the file exists
-      continue unless is_file(b)
+      unless is_file(b)
+        # i.e. b is an absolute path
+        continue if b is base
+
+        # fallback to using kpsewhich
+        b = kpsewhich(base)
+        continue unless is_file(b)
       b
 
     if bibs.length == 0
