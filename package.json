@@ -24,5 +24,6 @@
         ">= 0.1.0": "consumeSnippets"
       }
     }
-  }
+  },
+  "activationHooks": ["language-latex:grammar-used"]
 }
