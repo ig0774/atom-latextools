@@ -234,7 +234,7 @@ module.exports.parse_tex_log = (data) ->
       # A bit inefficient as we duplicate some of the code below for filename matching
       file_match = file_rx.exec(line)
       if file_match
-        if line.startsWith('runsystem') or file_package_rx.match(line)
+        if line.startsWith('runsystem') or file_package_rx.exec(line)
           debug("Ignoring possible file: #{line}")
           file_match = false
 
