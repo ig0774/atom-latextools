@@ -1,4 +1,4 @@
-{LTool,get_tex_root,find_in_files,is_file} = require './ltutils'
+{LTool,find_in_files,is_file} = require './ltutils'
 LTSimpleSelectList = require './views/ltsimple-select-list-view'
 LTTwoLineSelectList = require './views/lttwo-line-select-list-view'
 #get_ref_completions = require './get-ref-completions'
@@ -95,7 +95,7 @@ class CompletionManager extends LTool
   sel2_view: null
   sel_panel: null
 
-  constructor: (@ltconsole) ->
+  constructor: ->
     super
     @sel_view = new LTSimpleSelectList
     @sel2_view = new LTTwoLineSelectList
@@ -122,13 +122,13 @@ class CompletionManager extends LTool
 
     # TODO: pass initial match to select list
 
-    if (keybinding or atom.config.get("latextools.refAutoTrigger")) and
+    if (keybinding or @getConfig("latextools.refAutoTrigger", te)) and
         m = ref_rx_rev.exec(line)
       console.log("found match")
       @refComplete(te)
       return true
-    else if (keybinding or atom.config.get("latextools.citeAutoTrigger")) and
-        m = cite_rx.exec(line)
+    else if (keybinding or @getConfig("latextools.citeAutoTrigger", te)) and
+        m = cite_rx_rev.exec(line)
       console.log("found match")
       console.log(m)
       @citeComplete(te)
@@ -159,15 +159,17 @@ class CompletionManager extends LTool
 
 
   refComplete: (te) ->
-
-    fname = get_tex_root(te) # pass TextEditor, thanks to ig0777's patch
+    # pass TextEditor, thanks to ig0777's patch
+    fname = @getTeXRoot(te)
 
     parsed_fname = path.parse(fname)
 
     filedir = parsed_fname.dir
     filebase = parsed_fname.base  # name only includes the name (no dir, no ext)
 
-    labels = find_in_files(filedir, filebase, /\\label\{([^\}]+)\}/g)
+    labels = find_in_files.bind(@latextools)(
+      filedir, filebase, /\\label\{([^\}]+)\}/g
+    )
 
     # TODO add partially specified label to search field
     @sel_view.setItems(labels)
@@ -183,8 +185,7 @@ class CompletionManager extends LTool
 
 
   citeComplete: (te) ->
-
-    fname = get_tex_root(te)
+    fname = @getTeXRoot(te)
 
     bib_rx = /\\(?:bibliography|nobibliography|addbibresource)\{([^\}]+)\}/g
 
@@ -193,7 +194,9 @@ class CompletionManager extends LTool
       filedir = parsed_fname.dir
       #  name only includes the name (no dir, no ext)
       filebase = parsed_fname.base
-      raw_bibs = find_in_files(filedir, filebase, bib_rx)
+      raw_bibs = find_in_files.bind(@latextools)(
+        filedir, filebase, bib_rx
+      )
     catch
       # no file name, so simply parse the active buffer
       raw_bibs = []
@@ -240,7 +243,7 @@ class CompletionManager extends LTool
     for b in bibs
       entries = get_bib_completions(b)
       # TODO formatting here
-      item_fmt = atom.config.get("latextools.citePanelFormat")
+      item_fmt = @getConfig("latextools.citePanelFormat", te)
 
       if item_fmt.length != 2
         atom.notifications.addError(

@@ -1,4 +1,3 @@
-{get_tex_root} = require '../ltutils'
 {Directory} = require 'atom'
 fs = require 'fs'
 path = require 'path'
@@ -10,11 +9,11 @@ module.exports = (te) ->
     )
     return
 
-  rootFile = get_tex_root(te)
+  rootFile = @getTeXRoot(te)
   directory = new Directory(path.dirname(rootFile))
 
-  tempFileExts = atom.config.get('latextools.temporaryFileExtensions')
-  ignoredFolders = atom.config.get('latextools.temporaryFilesIgnoredFolders')
+  tempFileExts = @getConfig('latextools.temporaryFileExtensions')
+  ignoredFolders = @getConfig('latextools.temporaryFilesIgnoredFolders')
 
   fileHandler = (file) ->
     new Promise (resolve, reject) ->

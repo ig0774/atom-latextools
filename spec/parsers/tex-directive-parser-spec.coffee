@@ -149,7 +149,7 @@ describe 'TeXCommentParser', ->
       expect(result.options).toBeUndefined()
 
     it 'should support reading from a file specified as a path', ->
-      fixturesPath = path.join atom.project.getPaths()[0], 'parsers', \
+      fixturesPath = path.join __dirname, '..', 'fixtures', 'parsers',
         'tex-directive-parser'
       # this is necessary for tests to run locally from symlinked directory
       fixturesPath = fs.realpathSync(fixturesPath)

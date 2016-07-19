@@ -1,11 +1,8 @@
 {execFile} = require 'child_process'
-{quote} = require '../ltutils'
+{quote, LTool} = require '../ltutils'
 
 module.exports =
-class BaseViewer
-  constructor: (ltConsole) ->
-    @ltConsole = ltConsole
-
+class BaseViewer extends LTool
   forwardSync: (pdfFile, texFile, line, col, opts = {}) ->
     throw
       name: "Not Implemented Error"

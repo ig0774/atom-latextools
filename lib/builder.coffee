@@ -1,4 +1,4 @@
-{LTool,get_tex_root} = require './ltutils'
+{LTool} = require './ltutils'
 {exec} = require 'child_process'
 path = require 'path'
 fs = require 'fs'
@@ -30,7 +30,7 @@ class Builder extends LTool
     if te.isModified()
       te.save()
 
-    fname = get_tex_root(te)
+    fname = @getTeXRoot(te)
 
     parsed_fname = path.parse(fname)
 
@@ -43,7 +43,7 @@ class Builder extends LTool
       multiValues: ['option'],
       keyMaps: {'ts-program': 'program'}
 
-    user_options = atom.config.get("latextools.builderSettings.options")
+    user_options = @getConfig("latextools.builderSettings.options", te)
     user_options = user_options.concat directives.option
 
     # Special case: no default options, no user options give [undefined]
@@ -58,7 +58,7 @@ class Builder extends LTool
     if directives.program in whitelist
       user_program = directives.program
     else
-      user_program = atom.config.get("latextools.builderSettings.program")
+      user_program = @getConfig("latextools.builderSettings.program", te)
 
     # prepare the build console
     @ltConsole.show()
@@ -82,7 +82,7 @@ class Builder extends LTool
     _builderName =
       if builderName is "texify-latexmk"
         if process.platform isnt 'win32' or \
-            atom.config.get('latextools.win32.distro').toLowerCase() is 'texlive'
+            @getConfig('latextools.win32.distro').toLowerCase() is 'texlive'
           'latexmk'
         else
           'texify'
