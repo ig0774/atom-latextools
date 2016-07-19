@@ -4,6 +4,7 @@ Viewer = null
 ViewerRegistry = null
 CompletionManager = null
 SnippetManager = null
+ProjectManager = null
 deleteTempFiles = null
 {Disposable, CompositeDisposable} = require 'atom'
 path = require 'path'
@@ -15,6 +16,11 @@ module.exports = Latextools =
   snippets: null
 
   config:
+    useProjectFiles:
+      type: 'boolean'
+      default: true
+      description: 'Whether to use project files or ignore them completely.'
+      order: 0.5
     citeAutoTrigger:
       type: 'boolean'
       default: true
@@ -183,6 +189,7 @@ module.exports = Latextools =
     @builder = null
     @completionManager = null
     @snippetManager = null
+    @projectManager = null
     @viewerRegistry = null
 
     # function to register a viewer with latextools
@@ -238,7 +245,7 @@ module.exports = Latextools =
       # drop to JS to call this.getModel() which is the TextEditor the command
       # is run on
       te = `this.getModel()`
-      deleteTempFiles(te)
+      deleteTempFiles.bind(@)(te)
 
     # Snippet insertion
 
@@ -294,12 +301,51 @@ module.exports = Latextools =
     @snippetManager.setService(snippets)
     new Disposable -> @snippets = null
 
+  getConfig: (keyPath, te) ->
+    te = atom.workspace.getActiveTextEditor() unless te?
+
+    if te? and atom.config.get('latextools.useProjectFiles')
+      @requireIfNeeded ['project']
+
+      project = @projectManager.getProject(te.getPath())
+      result = project?.get keyPath
+      return result if result?
+
+    return atom.config.get keyPath
+
+  # Find tex root by checking %!TEX line
+  # TODO add support for configurable extensions
+  # In: current tex file; Out: tex root
+  getTeXRoot: (editor) ->
+    if typeof(editor) is 'string'
+      root = editor
+    else
+      root = editor.getPath()
+
+    console.log root
+
+    parse_tex_directives = require './parsers/tex-directive-parser'
+    directives = parse_tex_directives editor, onlyFor: ['root']
+    if directives.root?
+      return path.resolve(path.dirname(root), directives.root)
+
+    if atom.config.get('latextools.useProjectFiles')
+      @requireIfNeeded ['project']
+      project = @projectManager?.getProject(root)
+      console.log project
+      if project?
+        setting = project.get 'TEXroot'
+        setting = project.get 'latextools.TEXroot' unless setting?
+        return path.resolve(project.cwd, setting) if setting?
+
+    return root
+
   # Private: ensure modules are loaded on demand
   requireIfNeeded: (modules) ->
     # ltConsole is needed by all, so load it
     unless LTConsole?
       LTConsole = require './ltconsole'
-      @ltConsole = new LTConsole @state.ltConsoleState
+      @ltConsole = new LTConsole @state?.ltConsoleState
 
     for m in modules
       console.log("requiring if needed: #{m}")
@@ -324,15 +370,17 @@ module.exports = Latextools =
                   require './viewers/okular-viewer'
 
             Viewer = require './viewer'
-            @viewer = new Viewer @viewerRegistry, @ltConsole
+            @viewer = new Viewer @viewerRegistry, @
         when "builder"
           unless Builder?
             Builder = require './builder'
-            @builder = new Builder(@ltConsole)
-            @builder.viewer = @viewer # NOTE: MUST be loaded first!
+            @builder = new Builder @
         when "completion-manager"
           CompletionManager ?= require('./completion-manager').CompletionManager
-          @completionManager ?= new CompletionManager(@ltConsole)
+          @completionManager ?= new CompletionManager @
         when "snippet-manager"
           SnippetManager ?= require './snippet-manager'
-          @snippetManager ?= new SnippetManager(@ltConsole)
+          @snippetManager ?= new SnippetManager @
+        when "project"
+          ProjectManager ?= require('./project-manager').ProjectManager
+          @projectManager ?= new ProjectManager

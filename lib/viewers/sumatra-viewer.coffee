@@ -3,7 +3,7 @@ BaseViewer = require './base-viewer'
 module.exports =
 class SumatraViewer extends BaseViewer
   _getArgs = ->
-    [atom.config.get("latextools.win32.sumatra"), "-reuse-instance"]
+    [@getConfig("latextools.win32.sumatra"), "-reuse-instance"]
 
   forwardSync: (pdfFile, texFile, line, col, opts = {}) ->
     args = _getArgs()

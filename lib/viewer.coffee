@@ -1,4 +1,4 @@
-{LTool, get_tex_root, is_file} = require './ltutils'
+{LTool, is_file} = require './ltutils'
 {exec, execFile} = require 'child_process'
 path = require 'path'
 
@@ -23,12 +23,12 @@ class Viewer extends LTool
     # this is the file currently being edited, which is where the user wants to jump to
     current_file = te.getPath()
     # it need not be the master file, so we look for that, too
-    master_file = get_tex_root(te)
+    master_file = @getTeXRoot(te)
 
     parsed_master = path.parse(master_file)
     parsed_current = path.parse(current_file)
 
-    tex_exts = atom.config.get("latextools.texFileExtensions")
+    tex_exts = @getConfig("latextools.texFileExtensions", te)
     if parsed_master.ext in tex_exts && parsed_current.ext in tex_exts
       master_path_no_ext = path.join(parsed_master.dir, parsed_master.name)
 
@@ -50,10 +50,10 @@ class Viewer extends LTool
         )
         return
 
-      forward_sync = atom.config.get("latextools.forwardSync")
-      keep_focus = atom.config.get("latextools.keepFocus")
+      forward_sync = @getConfig("latextools.forwardSync", te)
+      keep_focus = @getConfig("latextools.keepFocus", te)
 
-      viewerName = atom.config.get("latextools.viewer")
+      viewerName = @getConfig("latextools.viewer", te)
       viewerClass = @viewerRegistry.get viewerName
 
       @ltConsole.addContent("Using viewer #{viewerName}")
@@ -66,7 +66,7 @@ class Viewer extends LTool
         viewerClass = @viewerRegistry.get 'default'
         return unless viewerClass?
 
-      viewer = new viewerClass(@ltConsole)
+      viewer = new viewerClass(@latextools)
 
       if forward_sync
         viewer.forwardSync pdf_file, current_file, row, col,

@@ -302,3 +302,36 @@ LaTeXTools' wrapping facility helps you in just these circumstances. All command
 `C-l C-e`, `C-l C-b`, `C-l C-u` and `C-l C-m` should be self-explanatory. `C-l C-c` wraps the selected text in a LaTeX command structure. If the currently selected text is `blah`, you get `\cmd{blah}`, and the letters `cmd` are highlighted. Replace them with whatever you want, then hit Tab: the cursor will move to the end of the command. Finally, `C-l C-n` wraps the selected text in a LaTeX environment structure. You get `\begin{env}`,`blah`, `\end{env}` on three separate lines, with `env` selected. Change `env` to whatever environment you want, then hit Tab to move to the end of the environment.
 
 These commands also work if there is no selection. In this case, they try to do the right thing; for example, `C-l C-e` gives `\emph{}` with the cursor between the curly braces.
+
+## Project Files
+
+LaTeXTools has some support for "project files": local per-project configuration files that support configuring settings specific to each project. The way this is currently implemented, each folder in the Atom project (a single window) can have up to one LaTeXTools configuration file, called `.latextools` with an extension indicating the type of contents of the file. See the [section on supported file types](#supported-file-types) for details on the supported file types.
+
+Inside the project file should be a LaTeXTools configuration settings in the same format as Atom configuration files. Note that LaTeXTools settings are all built off of a `latextools` objects. Settings not in the `latextools` object except the setting `TEXroot` (on which more below) which may be outside the `latextools` object.
+
+For example:
+
+```cson
+latextools:
+	keepFocus: True
+TEXroot: root_file.tex
+```
+
+### TEXroot
+
+Project files support a key called `TEXroot` which may be stored in the `latextools` config object or outside of it. This determines the root file in a way similar to the `%!TEX root` magic comment. If this setting is set to an absolute path, it will be used as is. If it is set to a relative path it will be resolved relative to the directory containing the matching project file.
+
+### Supported File Types
+
+The following file types are supported as LaTeXTools project files:
+
+| Extension | File Type |
+| `.cson` | CSON file |
+| `.json` | JSON file |
+| `.js` | JSON file|
+| `.yaml` | YAML file |
+| `.yml` | YAML file |
+
+These should be the extension of a file called `.latextools` so, e.g. `.latextools.cson`, `.latextools.json`, etc. Note that `.latextools` by itself will be ignored.
+
+LaTeXTools project files will be found in the order listed so `.latextools.cson` overrides `.latextools.json`, etc.

@@ -1,4 +1,4 @@
-{LTool,get_tex_root} = require './ltutils'
+{LTool} = require './ltutils'
 
 module.exports =
 

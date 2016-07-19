@@ -11,29 +11,15 @@ path = require 'path'
 module.exports.LTool =
 
 class LTool
-  viewer: null
-
-  constructor: (@ltConsole) ->
+  constructor: (@latextools) ->
+    # simplify common bindings
+    @ltConsole = @latextools.ltConsole
+    @viewer = @latextools.viewer
+    @getConfig = @latextools.getConfig.bind(@latextools)
+    @getTeXRoot = @latextools.getTeXRoot.bind(@latextools)
 
 
 # Utility functions
-
-# Find tex root by checking %!TEX line
-# TODO add support for project files
-# TODO add support for configurable extensions
-
-# In: current tex file; Out: file to be compiled
-module.exports.get_tex_root = (editor) ->
-  if typeof(editor) is 'string'
-    root = editor
-  else
-    root = editor.getPath()
-
-  directives = parse_tex_directives editor, onlyFor: ['root']
-  if directives.root?
-    root = path.resolve(path.dirname(root), directives.root)
-  return root
-
 
 # Check if a file exists
 module.exports.is_file = (fname) ->
@@ -69,7 +55,7 @@ module.exports.quote = (list) ->
 # and working our way through all included files
 #
 # Based on LaTeXTools' find_labels_in_files
-module.exports.find_in_files = (rootdir, src, rx) ->
+module.exports.find_in_files = find_in_files = (rootdir, src, rx) ->
 
   include_rx = /\\(?:input|include)\{([^\{\}]+)\}/g
 
@@ -81,7 +67,7 @@ module.exports.find_in_files = (rootdir, src, rx) ->
   # Deal with the possibility of a file without an extension
   # (always the case with \include)
 
-  tex_exts = atom.config.get('latextools.texFileExtensions')
+  tex_exts = @getConfig('latextools.texFileExtensions')
   if path.extname(src) in tex_exts
     tex_src = src
   else
@@ -130,7 +116,7 @@ module.exports.find_in_files = (rootdir, src, rx) ->
 
   # Now look for included files and recurse into them
   while (next_file_match = include_rx.exec(src_content)) != null
-    new_results = module.exports.find_in_files(rootdir, next_file_match[1], rx)
+    new_results = find_in_files.bind(@)(rootdir, next_file_match[1], rx)
     results = results.concat(new_results)
 
   return results

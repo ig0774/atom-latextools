@@ -1,4 +1,4 @@
-{LTool,get_tex_root} = require './ltutils'
+{LTool} = require './ltutils'
 {exec} = require 'child_process'
 path = require 'path'
 fs = require 'fs'
@@ -79,7 +79,7 @@ class Builder extends LTool
     if te.isModified()
       te.save()
 
-    fname = get_tex_root(te)
+    fname = @getTeXRoot(te)
 
     parsed_fname = path.parse(fname)
 
@@ -92,7 +92,7 @@ class Builder extends LTool
       multiValues: ['option'],
       keyMaps: {'ts-program': 'program'}
 
-    user_options = atom.config.get("latextools.builderSettings.options")
+    user_options = @getConfig("latextools.builderSettings.options", te)
     user_options = user_options.concat directives.option
 
     # Special case: no default options, no user options give [undefined]
@@ -107,7 +107,7 @@ class Builder extends LTool
     if directives.program in whitelist
       user_program = directives.program
     else
-      user_program = atom.config.get("latextools.builderSettings.program")
+      user_program = @getConfig("latextools.builderSettings.program", te)
 
     # prepare the build console
     @ltConsole.show()
@@ -122,7 +122,7 @@ class Builder extends LTool
       current_path = process.env.Path
     else
       current_path = process.env.PATH
-    texpath = atom.config.get("latextools." + process.platform + ".texpath")
+    texpath = @getConfig("latextools.#{process.platform}.texpath", te)
     @ltConsole.addContent("Platform: #{process.platform}; texpath: #{texpath}")
     cmd_env = process.env
     if texpath
@@ -131,7 +131,7 @@ class Builder extends LTool
 
     @ltConsole.addContent("Processing file #{filebase} (#{filename}) in directory #{filedir}")
 
-    builder = atom.config.get("latextools.builder")
+    builder = @getConfig("latextools.builder", te)
     builder = "texify-latexmk" if builder not in ["texify-latexmk"]
 
     # Built-in processing via texify or latexmk
@@ -140,7 +140,7 @@ class Builder extends LTool
       # first, get command to execute, with options
       command =
         if process.platform is "win32" and
-            atom.config.get("latextools.win32.distro") isnt "texlive"
+            @getConfig("latextools.win32.distro", te) isnt "texlive"
           @texify(filedir, filebase, filename, user_options, user_program)
         else
           @latexmk(filedir, filebase, filename, user_options, user_program)
