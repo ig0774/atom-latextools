@@ -471,14 +471,8 @@ module.exports = Latextools =
   # Private: ensure modules are loaded on demand
   requireIfNeeded: (modules) ->
     # ltConsole is needed by all, so load it
-<<<<<<< HEAD
     LTConsole ?= require './ltconsole'
     @ltConsole ?= new LTConsole @state.ltConsoleState
-=======
-    unless LTConsole?
-      LTConsole = require './ltconsole'
-      @ltConsole = new LTConsole @state?.ltConsoleState
->>>>>>> project_files
 
     for m in modules
       console.log("requiring if needed: #{m}")
