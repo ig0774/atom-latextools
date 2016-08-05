@@ -5,7 +5,7 @@ class TexifyBuilder extends BaseBuilder
   build: (dir, texfile, texfilename, user_options, user_program, env) ->
     @ltConsole.addContent("texify builder")
 
-    options = ["-b", "-p"]
+    options = ["-p", "--tex-option=\"-interaction=nonstopmode\""]
 
     user_program = switch user_program
       when 'pdflatex' then 'pdftex'
