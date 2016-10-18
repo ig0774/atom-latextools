@@ -344,11 +344,12 @@ module.exports = Latextools =
                 require './builders/texify-builder'
 
           Builder ?= require './builder'
-          @builder ?= new Builder @builderRegistry, @ltConsole
+          unless @builder?
+            @builder = new Builder @builderRegistry, @
 
-          # ensure viewer is loaded
-          @requireIfNeeded 'viewer' unless @viewer?
-          @builder.viewer = @viewer
+            # ensure viewer is loaded before builder
+            @requireIfNeeded ['viewer'] unless @viewer?
+            @builder.viewer = @viewer
         when "completion-manager"
           CompletionManager ?= require('./completion-manager').CompletionManager
           @completionManager ?= new CompletionManager(@ltConsole)
