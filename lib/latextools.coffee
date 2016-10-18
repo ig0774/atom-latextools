@@ -519,7 +519,7 @@ module.exports = Latextools =
             @builder = new Builder @builderRegistry, @
 
             # ensure viewer is loaded before builder
-            requireIfNeeded ['viewer'] unless @viewer?
+            @requireIfNeeded ['viewer'] unless @viewer?
             @builder.viewer = @viewer
         when "completion-manager"
           CompletionManager ?= require('./completion-manager').CompletionManager
