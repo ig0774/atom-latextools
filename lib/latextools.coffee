@@ -504,8 +504,9 @@ module.exports = Latextools =
 
           @viewer ?= new Viewer @viewerRegistry, @
         when "builder"
-          BuilderRegistry = require './builder-registry'
-          Builder ?= require './builder'
+          BuilderRegistry ?= require './builder-registry'
+          unless @builderRegistry
+            @builderRegistry = new BuilderRegistry
 
           unless @builderRegistry?
             @builderRegistry = new BuilderRegistry
