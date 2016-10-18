@@ -40,10 +40,13 @@ class SkimViewer extends BaseViewer
 
     command = path.join(
       atom.packages.resolvePackagePath("latextools"),
-      "lib/displayfile"
+      "lib",
+      "support",
+      "displayfile"
     )
 
     args.unshift command
-    args.push "\"#{pdfFile}\""
+    args.unshift '/bin/bash'
+    args.push "#{pdfFile}"
 
     @runViewer args
