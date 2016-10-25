@@ -505,9 +505,6 @@ module.exports = Latextools =
           @viewer ?= new Viewer @viewerRegistry, @
         when "builder"
           BuilderRegistry ?= require './builder-registry'
-          unless @builderRegistry
-            @builderRegistry = new BuilderRegistry
-
           unless @builderRegistry?
             @builderRegistry = new BuilderRegistry
             @builderRegistry.add 'latexmk',
@@ -516,6 +513,7 @@ module.exports = Latextools =
               @builderRegistry.add 'texify',
                 require './builders/texify-builder'
 
+          Builder ?= require './builder'
           unless @builder?
             @builder = new Builder @builderRegistry, @
 
