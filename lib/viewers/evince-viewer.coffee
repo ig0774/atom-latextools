@@ -37,8 +37,7 @@ class EvinceViewer extends BaseViewer
           ->
             atom.notifications.addError(
               '''Cannot find a valid Python interpreter.
-              Please ensure your `python` setting is correct in your Latextools settings.
-              '''
+              Please ensure your `python` setting is correct in your LaTeXTools settings.'''
             )
 
             # try to exit out if we can't find python
